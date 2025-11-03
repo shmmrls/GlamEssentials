@@ -71,18 +71,23 @@
   margin-bottom: 0.75rem;
 }
 
-.add-btn {
-  background-color: #2d3748;
-  color: #fff;
-  border: none;
-  padding: 0.5rem;
-  border-radius: 6px;
+.btn-cart {
+  background: black;
+  color: white;
+  border: 1px solid transparent;
+  padding: 8px 16px;
   width: 100%;
-  font-weight: bold;
-  transition: background 0.3s ease;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: 0;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
 }
-.add-btn:hover {
-  background-color: #1a202c;
+.btn-cart:hover {
+  background: white;
+  color: black;
+  border: 1px solid black;
 }
 
 /* --- Slider Arrows --- */
@@ -113,4 +118,36 @@
 @media (max-width: 992px) {
   .slider-btn.prev { left: 10px; }
   .slider-btn.next { right: 10px; }
+}
+
+/* Category Sections */
+.category-section {
+  padding: 2rem 0;
+  border-bottom: 1px solid #eee;
+}
+
+.category-section:last-child {
+  border-bottom: none;
+}
+
+.category-section h2 {
+  font-size: 1.8rem;
+  color: #333;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 2rem;
+  position: relative;
+  display: inline-block;
+}
+
+.category-section h2:after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 50px;
+  height: 2px;
+  background: black;
+}
 }

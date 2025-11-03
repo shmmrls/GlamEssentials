@@ -1,8 +1,26 @@
 <?php
-session_start();
-// load page-specific CSS through header.php
+
 $pageCss = 'index.css';
 include('./includes/header.php');
+include('./includes/config.php');
+?>
+<style>
+<?php include('./includes/style/index.css'); ?>
+</style>
+<link rel="stylesheet" href="./includes/style/hero.css">
+
+<section class="hero">
+    <div class="hero-overlay">
+        <div class="hero-content">
+            <h1>DISCOVER ELEGANCE</h1>
+            <p>Premium salon essentials curated for the modern professional.</p>
+            <a href="item/index.php" class="btn btn-primary">Shop Now</a>
+        </div>
+    </div>
+</section>
+<?php
+// ...existing code...
+
 include('./includes/config.php');
 
 // --- Check login ---
@@ -14,20 +32,12 @@ $sql_categories = "SELECT * FROM categories";
 $categories_result = mysqli_query($conn, $sql_categories);
 
 echo '<div class="container">';
-echo '<h2 class="text-center mb-4">Shop Best Sellers</h2>';
+$sql_all_categories = "SELECT * FROM categories";
+$all_categories_result = mysqli_query($conn, $sql_all_categories);
 
-echo '<div class="category-filter mb-4 text-center">';
-echo '<form method="GET" action="">';
-echo '<label for="category">Filter by Category:</label> ';
-echo '<select id="category" name="category" onchange="this.form.submit()" class="form-select d-inline-block w-auto">';
-echo '<option value="all">All Categories</option>';
-while ($cat = mysqli_fetch_assoc($categories_result)) {
-    $selected = (isset($_GET["category"]) && $_GET["category"] == $cat["category_id"]) ? "selected" : "";
-    echo "<option value='{$cat['category_id']}' {$selected}>{$cat['category_name']}</option>";
-}
-echo '</select>';
-echo '</form>';
-echo '</div>';
+while ($category = mysqli_fetch_assoc($all_categories_result)) {
+    echo "<div class='category-section mb-5'>";
+    echo "<h2 class='text-center mb-4'>{$category['category_name']}</h2>";
 
 // --- Mini-cart summary ---
 if (isset($_SESSION["cart_products"]) && count($_SESSION["cart_products"]) > 0) {
@@ -44,24 +54,24 @@ if (isset($_SESSION["cart_products"]) && count($_SESSION["cart_products"]) > 0) 
           </div>";
 }
 
-// --- Load Products ---
-$category_filter = isset($_GET['category']) && $_GET['category'] != 'all' ? "WHERE p.category_id=" . intval($_GET['category']) : '';
-$sql = "SELECT p.product_id, p.product_name, p.description, p.price, p.main_img_name, i.quantity, i.unit, i.reorder_level,
-        CASE 
-            WHEN i.quantity = 0 THEN 'Out of Stock' 
-            WHEN i.quantity < i.reorder_level THEN 'Low Stock' 
-            ELSE 'In Stock' 
-        END AS stock_status
-        FROM products p
-        JOIN inventory i ON p.product_id = i.product_id
-        $category_filter
-        ORDER BY p.created_at DESC";
-$results = mysqli_query($conn, $sql);
-?>
+    // --- Load Featured Products for this category ---
+    $sql = "SELECT p.product_id, p.product_name, p.description, p.price, p.main_img_name, i.quantity, i.unit, i.reorder_level,
+            CASE 
+                WHEN i.quantity = 0 THEN 'Out of Stock' 
+                WHEN i.quantity < i.reorder_level THEN 'Low Stock' 
+                ELSE 'In Stock' 
+            END AS stock_status
+            FROM products p
+            JOIN inventory i ON p.product_id = i.product_id
+            WHERE p.category_id = {$category['category_id']}
+            ORDER BY p.created_at DESC
+            LIMIT 5";  // Limit to 5 products per category
+    $results = mysqli_query($conn, $sql);
+    ?>
 
-<div class="product-slider-container">
-    <button class="slider-btn prev" id="slidePrev">&#10094;</button>
-    <div class="product-row-container" id="productSlider">
+    <div class="product-slider-container">
+        <button class="slider-btn prev" id="slidePrev_<?php echo $category['category_id']; ?>">&#10094;</button>
+        <div class="product-row-container" id="productSlider_<?php echo $category['category_id']; ?>">
         <?php
         if ($results && mysqli_num_rows($results) > 0) {
             while ($row = mysqli_fetch_assoc($results)) {
@@ -74,11 +84,23 @@ $results = mysqli_query($conn, $sql);
                 $avg_rating = $review['avg_rating'] ? number_format($review['avg_rating'], 1) : 'N/A';
                 $total_reviews = $review['total_reviews'];
 
-                // Images
-                $sql_images = "SELECT img_name FROM product_images WHERE product_id={$product_id} LIMIT 1";
-                $res_images = mysqli_query($conn, $sql_images);
-                $img = mysqli_fetch_assoc($res_images);
-                $main_img = $img ? "./item/{$img['img_name']}" : "./assets/default.png";
+                // Get image path using main_img_name
+                $imgName = $row['main_img_name'];
+                $main_img = './assets/default.png';
+                
+                if (!empty($imgName)) {
+                    $productImagesDir = 'C:/infomanagement/htdocs/GlamEssentials/item/products/';
+                    // Check common image extensions
+                    $extensions = ['.jpg', '.png', '.webp'];
+                    
+                    foreach ($extensions as $ext) {
+                        $fullPath = $productImagesDir . $imgName . $ext;
+                        if (file_exists($fullPath)) {
+                            $main_img = './item/products/' . $imgName . $ext;
+                            break;
+                        }
+                    }
+                }
 
                 // JS protection
                 $add_onclick = $is_logged_in ? '' : "alert('Please log in first to add items to cart.'); return false;";
@@ -91,16 +113,10 @@ $results = mysqli_query($conn, $sql);
                 echo "<p class='product-price'>₱" . number_format($row['price'], 2) . "</p>";
 
                 // Optional dropdown for variant/size
-                echo "<div class='product-option'>
-                        <label>Select size:</label>
-                        <select class='form-select'>
-                            <option>Jumbo Size</option>
-                        </select>
-                      </div>";
 
                 echo "<input type='hidden' name='item_id' value='{$product_id}'>";
                 echo "<input type='hidden' name='type' value='add'>";
-                echo "<button type='submit' class='btn btn-dark add-btn' onclick=\"{$add_onclick}\">Add To Bag</button>";
+                echo "<button type='submit' style='background: black; color: white; border: none; padding: 8px 16px; width: 100%; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px; border-radius: 0; font-size: 0.9rem;' onclick=\"{$add_onclick}\">Add To Bag</button>";
                 echo '</form>';
                 echo '</div>';
             }
@@ -109,17 +125,28 @@ $results = mysqli_query($conn, $sql);
         }
         ?>
     </div>
-    <button class="slider-btn next" id="slideNext">&#10095;</button>
+        <button class="slider-btn next" id="slideNext_<?php echo $category['category_id']; ?>">&#10095;</button>
+    </div>
 </div>
+<?php
+}  // End of category while loop
+?>
 
 <?php include('./includes/footer.php'); ?>
 
 <script>
-// --- Smooth Slider Navigation ---
-document.getElementById('slideNext').addEventListener('click', function() {
-  document.getElementById('productSlider').scrollBy({ left: 300, behavior: 'smooth' });
-});
-document.getElementById('slidePrev').addEventListener('click', function() {
-  document.getElementById('productSlider').scrollBy({ left: -300, behavior: 'smooth' });
-});
+// --- Smooth Slider Navigation for each category ---
+<?php
+mysqli_data_seek($all_categories_result, 0);
+while ($category = mysqli_fetch_assoc($all_categories_result)) {
+    echo "
+    document.getElementById('slideNext_" . $category['category_id'] . "').addEventListener('click', function() {
+        document.getElementById('productSlider_" . $category['category_id'] . "').scrollBy({ left: 300, behavior: 'smooth' });
+    });
+    document.getElementById('slidePrev_" . $category['category_id'] . "').addEventListener('click', function() {
+        document.getElementById('productSlider_" . $category['category_id'] . "').scrollBy({ left: -300, behavior: 'smooth' });
+    });\n";
+}
+?>
+</script>
 </script>

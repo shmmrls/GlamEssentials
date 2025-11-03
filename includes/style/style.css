@@ -16,6 +16,7 @@ body {
   margin: 0;
   position: relative;
   overflow-x: hidden;
+  padding-top: 100px; /* Adjust this value based on your header height */
 }
 
 main {
@@ -33,7 +34,12 @@ main {
   overflow: hidden;
   font-size: 13px;
   font-weight: 500;
-  position: relative;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  z-index: 1001;
 }
 
 .banner-content {
@@ -61,8 +67,11 @@ main {
 /* 🖤 Header */
 .header-container {
   background: #fff;
-  position: sticky;
-  top: 0;
+  position: fixed;
+  top: 29px; /* Height of banner (8px padding * 2 + ~13px text) */
+  left: 0;
+  right: 0;
+  width: 100%;
   z-index: 1000;
   box-shadow: 0 1px 6px rgba(0,0,0,0.08);
 }
